@@ -516,6 +516,13 @@ HH:mm:ss  bob  -> SERVIDOR  REGISTRO  OK  IP=192.168.1.x
 
 ---
 
+> **IMPORTANTE — Misma red obligatoria:**
+> Todos los equipos (servidor y clientes) deben estar conectados a la **misma red**.
+> Si el servidor está conectado a la red `Personal UTA`, todos los clientes deben
+> estar conectados a `Personal UTA` también. Si un cliente está en otra red
+> (datos móviles, red de casa, otra WiFi) **no podrá conectarse**, ya que las IPs
+> locales no son accesibles entre redes distintas.
+
 > **Nota:** No es obligatorio usar otro equipo para desarrollar y probar.
 > Todo funciona en una sola computadora con varias terminales usando `localhost`.
 > El otro equipo solo es necesario para demostrar comunicación real entre máquinas distintas.
