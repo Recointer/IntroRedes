@@ -434,8 +434,49 @@ El archivo `server.log` guarda el registro completo de todos los eventos. Si alg
 
 ---
 
+## Conectar un Cliente desde Otro Equipo
+
+### Paso 1 — Obtener la IP del servidor
+En el equipo donde corre el servidor, abrir terminal y ejecutar:
+```
+ipconfig
+```
+Buscar `IPv4 Address` → ej. `192.168.1.15`
+
+### Paso 2 — Copiar los archivos al otro equipo
+Copiar la carpeta `mininet/` completa al otro equipo (con los `.class` ya compilados,
+o compilar allí con `compilar.bat` si tiene JDK instalado).
+
+### Paso 3 — Conectar usando la IP del servidor
+En el otro equipo, abrir terminal en la carpeta `mininet/`:
+```
+java Client 192.168.1.15 9090 bob
+```
+
+### Paso 4 — Verificar conectividad de red
+Si no conecta, primero verificar que ambos equipos se ven en la red:
+```
+ping 192.168.1.15
+```
+- Responde → red OK, el problema es el firewall
+- No responde → los equipos no están en la misma red
+
+### Paso 5 — Abrir el puerto en el firewall (si no conecta)
+En el equipo del servidor, abrir PowerShell como **administrador**:
+```
+netsh advfirewall firewall add rule name="MiniNet" protocol=TCP dir=in localport=9090 action=allow
+```
+
+---
+
+> **Nota:** No es obligatorio usar otro equipo para desarrollar y probar.
+> Todo funciona en una sola computadora con varias terminales usando `localhost`.
+> El otro equipo solo es necesario para demostrar comunicación real entre máquinas distintas.
+
+---
+
 ## Requisitos
 
-- **Java 8 o superior** (JDK instalado)
-- Los equipos deben estar en la **misma red** o el servidor debe ser accesible desde los clientes
+- **Java 8 o superior** (JDK instalado en cada equipo que ejecute cliente o servidor)
+- Ambos equipos en la **misma red local** (mismo router/WiFi)
 - Puerto **9090 TCP** abierto en el firewall del equipo servidor
