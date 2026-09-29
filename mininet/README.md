@@ -341,6 +341,99 @@ mininet/
 
 ---
 
+## Verificación del Sistema (Prueba Paso a Paso)
+
+### Paso 1 — Compilar
+```
+cd mininet
+compilar.bat
+```
+Sin errores en consola = OK.
+
+### Paso 2 — Arrancar servidor (Terminal 1)
+```
+servidor.bat
+```
+Debe mostrar:
+```
+╔══════════════════════════════╗
+║   MiniNet Server - Puerto 9090  ║
+╚══════════════════════════════╝
+```
+
+### Paso 3 — Conectar cliente A (Terminal 2)
+```
+java Client localhost 9090 alice
+```
+El servidor imprime:
+```
+10:00:01  alice  -> SERVIDOR  REGISTRO  OK  IP=127.0.0.1
+```
+El cliente muestra `[OK] REGISTRO alice` y el menú de comandos.
+
+### Paso 4 — Conectar cliente B (Terminal 3)
+```
+java Client localhost 9090 bob
+```
+En la consola de `alice` aparece automáticamente: `[NOTIF] INGRESO bob`
+
+### Paso 5 — Probar unicast
+En la consola de `alice`:
+```
+M bob Hola
+```
+- `bob` recibe: `[MSG de alice] Hola`
+- `alice` recibe: `[ACK] MENSAJE|bob|Xms`
+
+### Paso 6 — Probar listar clientes
+```
+L
+```
+Respuesta: `[CLIENTES] alice,bob`
+
+### Paso 7 — Probar broadcast
+```
+B Hola a todos
+```
+- `bob` recibe: `[BROADCAST de alice] Hola a todos`
+- `alice` recibe: `[ACK] BROADCAST|1`
+
+### Paso 8 — Probar grupos
+En consola de `alice`:
+```
+GC lab alice,bob
+G lab Reunion en 5 minutos
+```
+- `bob` recibe: `[GRUPO lab de alice] Reunion en 5 minutos`
+
+### Paso 9 — Probar ping
+```
+P bob
+```
+Respuesta: `[PING] bob: DISPONIBLE (Xms)`
+
+### Paso 10 — Probar desconexión
+Cerrar `bob` con `Q`. En consola de `alice`:
+- Aparece: `[NOTIF] SALIDA bob`
+- Hacer `P bob` → responde `NO_DISPONIBLE`
+- Hacer `M bob Hola` → responde `ERROR|MENSAJE|DESTINO_NO_DISPONIBLE|bob`
+
+---
+
+### Solución de Problemas
+
+| Síntoma | Causa probable |
+|---------|----------------|
+| `[ERROR] No se puede conectar` | Servidor no está corriendo o puerto incorrecto |
+| `ERROR\|REGISTRO\|ID_EN_USO` | Ya hay un cliente con ese ID conectado |
+| `ERROR\|MENSAJE\|DESTINO_NO_DISPONIBLE` | El destino no está registrado o se desconectó |
+| No llegan mensajes al otro cliente | Revisar que ambos usen el mismo host y puerto |
+| El cliente se cierra solo | El servidor se detuvo; reiniciar servidor primero |
+
+El archivo `server.log` guarda el registro completo de todos los eventos. Si algo falla, revisarlo para identificar en qué punto ocurrió el problema.
+
+---
+
 ## Requisitos
 
 - **Java 8 o superior** (JDK instalado)
