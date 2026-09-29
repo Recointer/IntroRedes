@@ -436,35 +436,82 @@ El archivo `server.log` guarda el registro completo de todos los eventos. Si alg
 
 ## Conectar un Cliente desde Otro Equipo
 
-### Paso 1 — Obtener la IP del servidor
-En el equipo donde corre el servidor, abrir terminal y ejecutar:
+### En el equipo SERVIDOR
+
+**1. Verificar que Java está instalado:**
+```
+java -version
+javac -version
+```
+Debe mostrar la versión. Si no → instalar JDK desde https://adoptium.net
+
+**2. Compilar el sistema:**
+```
+cd C:\ruta\a\mininet
+javac Server.java Client.java
+```
+Verificar que se generaron los `.class`:
+```
+dir *.class
+```
+Debe listar: `Server.class`, `Server$ClientHandler.class`, `Client.class`
+
+**3. Obtener la IP local del servidor:**
 ```
 ipconfig
 ```
-Buscar `IPv4 Address` → ej. `192.168.1.15`
+Buscar la línea `Dirección IPv4` (ej. `192.168.1.15`). Anotar ese número.
 
-### Paso 2 — Copiar los archivos al otro equipo
-Copiar la carpeta `mininet/` completa al otro equipo (con los `.class` ya compilados,
-o compilar allí con `compilar.bat` si tiene JDK instalado).
-
-### Paso 3 — Conectar usando la IP del servidor
-En el otro equipo, abrir terminal en la carpeta `mininet/`:
+**4. Abrir el puerto 9090 en el firewall** (PowerShell como administrador):
 ```
-java Client 192.168.1.15 9090 bob
+netsh advfirewall firewall add rule name="MiniNet" protocol=TCP dir=in localport=9090 action=allow
 ```
 
-### Paso 4 — Verificar conectividad de red
-Si no conecta, primero verificar que ambos equipos se ven en la red:
+**5. Iniciar el servidor:**
+```
+java Server 9090
+```
+Debe mostrar el banner de inicio y quedar escuchando.
+
+---
+
+### En el equipo CLIENTE (otra computadora)
+
+**1. Verificar Java instalado:**
+```
+java -version
+```
+
+**2. Copiar la carpeta `mininet/`** al otro equipo (USB, carpeta compartida, etc.)
+Solo son necesarios los archivos `.java` y `.class` (no hace falta recompilar si el JDK es compatible).
+
+**3. Verificar que los `.class` están presentes:**
+```
+cd C:\ruta\a\mininet
+dir *.class
+```
+
+**4. Verificar conectividad con el servidor** (reemplazar con la IP real):
 ```
 ping 192.168.1.15
 ```
-- Responde → red OK, el problema es el firewall
-- No responde → los equipos no están en la misma red
+- Responde con tiempos → red OK, continuar
+- `Request timed out` → no hay conexión, revisar red o firewall
 
-### Paso 5 — Abrir el puerto en el firewall (si no conecta)
-En el equipo del servidor, abrir PowerShell como **administrador**:
+**5. Conectar el cliente:**
 ```
-netsh advfirewall firewall add rule name="MiniNet" protocol=TCP dir=in localport=9090 action=allow
+java Client 192.168.1.15 9090 bob
+```
+Reemplazar `192.168.1.15` con la IP del servidor y `bob` con el nombre del participante.
+
+**6. Verificar registro exitoso:**
+El cliente debe mostrar:
+```
+[OK] REGISTRO bob
+```
+El servidor debe imprimir:
+```
+HH:mm:ss  bob  -> SERVIDOR  REGISTRO  OK  IP=192.168.1.x
 ```
 
 ---
