@@ -259,24 +259,98 @@ Cuando `alice` envía `MENSAJE|bob|Hola`, ocurre lo siguiente en cada capa:
 
 ## Captura con Wireshark
 
-Para capturar el tráfico de MiniNet:
+### Cómo capturar
 
-1. Abrir Wireshark → seleccionar interfaz de red activa (Ethernet o Wi-Fi)
-2. Filtro de captura: `tcp port 9090`
-3. Iniciar captura → correr servidor y clientes → realizar intercambios
-4. Detener captura
+1. Abrir Wireshark → seleccionar interfaz:
+   - Clientes en `localhost` → seleccionar **Loopback** (`Adapter for loopback traffic capture`)
+   - Clientes en red real → seleccionar **Wi-Fi** o **Ethernet**
+2. Escribir filtro en la barra superior: `tcp.port == 9090`
+3. Click en ▶ para iniciar captura
+4. Correr servidor y clientes, realizar intercambios
+5. Click en ■ para detener captura
 
-**Qué se puede identificar:**
+---
+
+### Cómo interpretar las columnas
+
+| Columna | Qué significa |
+|---------|--------------|
+| `No.` | Número de paquete en orden |
+| `Time` | Tiempo desde inicio de captura |
+| `Source` | IP de quien envía |
+| `Destination` | IP de quien recibe |
+| `Protocol` | TCP en este caso |
+| `Length` | Tamaño del paquete en bytes |
+| `Info` | Resumen del paquete |
+
+### Cómo leer la columna `Info`
+
+| Info | Significado |
+|------|-------------|
+| `SYN` | Cliente intentando conectar al servidor |
+| `SYN-ACK` | Servidor aceptando la conexión |
+| `ACK` | Confirmación — handshake TCP completo |
+| `PSH, ACK  Len=18` | Paquete con datos (aquí viaja el mensaje MNP) |
+| `FIN, ACK` | Cierre ordenado (cliente usó `Q`) |
+| `RST` | Cierre abrupto (cerraron la terminal) |
+
+### Cómo ver el mensaje MNP dentro del paquete
+
+1. Click en un paquete `PSH, ACK`
+2. Panel inferior → expandir `Transmission Control Protocol`
+3. Expandir `Data`
+4. A la derecha del hexadecimal aparece el texto en claro
+
+Ejemplo:
+```
+52 45 47 49 53 54 52 4f 7c 61 6c 69 63 65    REGISTRO|alice
+```
+
+---
+
+### Ejemplo completo: bob envía "Hola" a alice
+
+**Escenario:**
+- Servidor en `192.168.1.15`
+- alice en `192.168.1.20`
+- bob en `192.168.1.25`
+- bob escribe: `M alice Hola`
+
+**Secuencia de paquetes en Wireshark:**
+
+```
+No.  Time    Source         Destination    Info
+─────────────────────────────────────────────────────────────────────────
+1    0.000   192.168.1.25   192.168.1.15   PSH,ACK Len=17   ← bob → servidor: "MENSAJE|alice|Hola"
+2    0.001   192.168.1.15   192.168.1.20   PSH,ACK Len=16   ← servidor → alice: "MSG|bob|Hola"
+3    0.001   192.168.1.15   192.168.1.25   PSH,ACK Len=22   ← servidor → bob:  "ACK|MENSAJE|alice|1ms"
+4    0.001   192.168.1.25   192.168.1.15   ACK              ← bob confirma recepción del ACK (TCP)
+5    0.002   192.168.1.20   192.168.1.15   ACK              ← alice confirma recepción del MSG (TCP)
+```
+
+**Cómo interpretar cada paquete:**
+
+- **Paquete 1** → bob envía al servidor el comando `MENSAJE|alice|Hola` (protocolo MNP, capa 7). Visible en el campo `Data` del paquete.
+- **Paquete 2** → el servidor reenvía a alice como `MSG|bob|Hola`. Destino cambia a `192.168.1.20` (IP de alice).
+- **Paquete 3** → el servidor notifica a bob que el mensaje fue entregado: `ACK|MENSAJE|alice|1ms`. El `1ms` es la latencia de reenvío.
+- **Paquetes 4 y 5** → ACKs automáticos de TCP (capa 4), no son mensajes MNP, son confirmaciones de que los bytes llegaron.
+
+**Relación con el log del servidor:**
+```
+10:34:25  bob  -> alice  MENSAJE  OK 1ms
+```
+Buscar en Wireshark los paquetes `PSH,ACK` alrededor del segundo `10:34:25` — corresponden exactamente a los paquetes 1, 2 y 3 de la tabla anterior.
+
+---
+
+### Qué se puede identificar en la captura
+
 - IP origen/destino en cada paquete
 - Puerto 9090 como destino en mensajes al servidor
 - Handshake TCP de 3 vías al conectar (SYN → SYN-ACK → ACK)
 - FIN/RST al desconectar un cliente
-- El contenido del protocolo MNP en texto plano en la pestaña "Data"
-- Tiempo entre paquetes = latencia observable
-
-**Correlación log ↔ Wireshark:**
-El `server.log` registra `HH:mm:ss` de cada evento. En Wireshark el tiempo
-relativo de los paquetes permite identificar el mismo intercambio.
+- El texto del protocolo MNP en claro en la pestaña `Data`
+- Latencia observable entre el paquete de envío y el ACK
 
 ---
 
